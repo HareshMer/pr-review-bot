@@ -1,0 +1,47 @@
+name: "AI PR Reviewer"
+description: "Automated Pull Request code reviewer powered by Google Gemini and deterministic security rules."
+author: "Your Organization"
+
+inputs:
+  github_token:
+    description: "GitHub token for authenticating PR comments and reviews."
+    required: false
+    default: "${{ github.token }}"
+  gemini_api_key:
+    description: "Google Gemini API key."
+    required: true
+  gemini_model:
+    description: "Primary Google Gemini model to use."
+    required: false
+    default: "gemini-3.8-flash"
+  gemini_fallback_models:
+    description: "Comma-separated list of fallback Gemini models."
+    required: false
+    default: "gemini-3.6-flash,gemini-3.5-flash-lite"
+  review_verdict:
+    description: "Default review verdict event (COMMENT, REQUEST_CHANGES, APPROVE)."
+    required: false
+    default: "COMMENT"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Install Action Dependencies
+      shell: bash
+      run: npm ci --prefix ${{ github.action_path }}
+
+    - name: Execute AI PR Review
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        GEMINI_API_KEY: ${{ inputs.gemini_api_key }}
+        GEMINI_MODEL: ${{ inputs.gemini_model }}
+        GEMINI_FALLBACK_MODELS: ${{ inputs.gemini_fallback_models }}
+        REVIEW_EVENT_VERDICT: ${{ inputs.review_verdict }}
+      run: npx --prefix ${{ github.action_path }} tsx ${{ github.action_path }}/src/action-runner.ts
+
